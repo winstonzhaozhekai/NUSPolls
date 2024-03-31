@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 from telegram import Update, Bot
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 load_dotenv()
@@ -14,7 +15,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Welcome to NUSPolls, a completely anonymous platform for NUS Students to ask their heartburning questions. \n"
+        text = 
+        "Welcome to NUSPolls 📊\n" 
+        "A completely anonymous platform made by *NUS Students for NUS Students*.\n"
+        , parse_mode = ParseMode.MARKDOWN
     )
 
 async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
