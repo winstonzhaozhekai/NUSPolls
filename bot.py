@@ -11,13 +11,19 @@ CHANNEL_ID = os.getenv('CHANNEL_ID')
 bot = Bot(token=BOT_TOKEN)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello")
+    await update.message.reply_text(
+        text = 
+        "Welcome to NUSPolls 📊\n" 
+        "Have a heartburning question to ask? \n"
+        "A completely anonymous platform made by *NUS Students for NUS Students*.\n"
+        , parse_mode = ParseMode.MARKDOWN
+    )
 
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         text = 
-        "Welcome to NUSPolls 📊\n" 
-        "A completely anonymous platform made by *NUS Students for NUS Students*.\n"
+        "*How do we guarantee your annonymity?* \n"
+        "We use hashing to hide every user's identity. Unlike encryption, hashing cannot be undone. \n"
         , parse_mode = ParseMode.MARKDOWN
     )
 
