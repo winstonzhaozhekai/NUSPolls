@@ -1,8 +1,9 @@
 from dotenv import load_dotenv
 import os
-from telegram import Update, Bot
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from functions import start, info
 
 load_dotenv()
 
@@ -10,47 +11,54 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 CHANNEL_ID = os.getenv('CHANNEL_ID')
 bot = Bot(token=BOT_TOKEN)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        text = 
-        "*Welcome to NUSPolls* 📊\n" 
-        "\n"
-        "Do you have a heartburning question you wish to ask? \n"
-        "\n"
-        "Click /poll to start a poll on our channel now: <insert link> \n"
-        "\n"
-        "Simply type in your question, select how many options you want and it will be posted *anonymously* on the channel \n"
-        "\n"
-        "Want to respond to polls beyond voting? Introducing our *completely anonymous* comment function. Click on /comment beneath the poll and you will be able to type your reply to the bot *anonymously* (No one will see your user typing in the comment section!) \n"
-        "\n"
-        "Fret not, the username displayed in each poll's comments are independent of each other, so your identity is protected \n"
-        "\n"
-        "A completely anonymous platform that prioritises your anonymity, made by *NUS Students for NUS Students*.\n"
-        "\n"
-        "More info here @ /info \n"
-        , parse_mode = ParseMode.MARKDOWN
-    )
-
-async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        text = 
-        "*How do we guarantee your annonymity?* \n"
-        "\n"
-        "We use hashing to hide every user's identity. Unlike encryption, hashing cannot be undone. Your unique user ID is directly pipelined into the hashing function, with no interactions between so your true user ID is never revealed to anyone, *including us*\n"
-        "\n"
-        "*How do we address users who are misusing the platform?*\n"
-        "\n"
-        "We admins have the capabilities to ban or timeout users who have misused the platform. We do not rely on AI so you, the users can freely send in anything you wish. However keep in mind, we can ban you. We don't need to know your true user ID, since hashing will produce the same output given the same input, it is not random. So we will know your anonymous identity and stop you from using the platform without ever compromising on anonymity. \n"
-        "\n"
-        "*I still do not understand how hashing works, how does it protect me?* \n"
-        "\n"
-        "Let's say your user ID is 0001, and after hashing, it becomes 888b19a. This hashed ID can never be traced back to 0001, so no one can never find out who is 888b19a. But no other user ID other than 0001 will be hased into 888b19a. So we will never know your true identity but we will know your given anonymous identity, still giving us the ability to regulate the channel while protecting your identity \n"
-        , parse_mode = ParseMode.MARKDOWN
-    )
+# Dictionary to store user's questions
+user_questions = {}
 
 async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    await update.message.reply_text(
+        text=
+        "*Enter your question:* \n"
+        , parse_mode = ParseMode.MARKDOWN
+    )
+    chat_id = update.effective_chat.id
+    user_questions[chat_id] = {}  # Initialize an empty dictionary for user's question
+    print("user_questions:", user_questions)
 
+async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    if chat_id not in user_questions:
+        await update.message.reply_text("Please start by using /poll first before sending your question.")
+        return
+    user_questions[chat_id]['question'] = update.message.text
+
+    # Construct inline keyboard with a "Continue" button
+    keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        text=
+        "Your Question: " + user_questions[chat_id]['question'] + "\n"
+        "\n"
+        "Mistyped your question? Just send it again below \n",
+        reply_markup=reply_markup
+    )
+    print("user_questions:", user_questions)
+
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if query.data == "continue":
+        # Here you can proceed to handling options after the user has clicked "Continue"
+        await handle_options(update, context)
+
+async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    chat_id = query.message.chat_id
+
+    await bot.send_message(
+        chat_id=chat_id,
+        text="*How many options?:*",
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 async def canitalk(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await bot.send_message(chat_id=CHANNEL_ID, text="IM TALKING")
@@ -59,7 +67,10 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('info', info))
+    app.add_handler(CommandHandler('poll', poll))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_question))  # Handle the user's question
     app.add_handler(CommandHandler('canitalk', canitalk))
+    app.add_handler(CallbackQueryHandler(button_callback)) # Handle "Continue" button after user sends question
     app.run_polling()
 
 if __name__ == '__main__':
