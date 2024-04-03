@@ -1,6 +1,11 @@
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
+import random
+import hashlib
+
+
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -39,3 +44,5 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Let's say your user ID is 0001, and after hashing, it becomes 888b19a. This hashed ID can never be traced back to 0001, so no one can never find out who is 888b19a. But no other user ID other than 0001 will be hased into 888b19a. So we will never know your true identity but we will know your given anonymous identity, still giving us the ability to regulate the channel while protecting your identity \n"
         , parse_mode = ParseMode.MARKDOWN
     )
+
+

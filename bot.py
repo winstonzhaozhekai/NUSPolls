@@ -3,7 +3,7 @@ import os
 from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-from functions import start, info
+from functions import *
 
 load_dotenv()
 
@@ -29,13 +29,13 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # If user typed something before initialising /poll 
     if chat_id not in user_questions:
-        await update.message.reply_text("Please start by using /poll first before sending your question.")
+        await update.message.reply_text("Access the bot's menu by typing /start.")
         return
     
     user_questions[chat_id]['question'] = update.message.text # Retrive text sent by user after initialising /poll and store in dictionary
 
     # Construct inline keyboard with a "Continue" button
-    keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")]]
+    keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")], [InlineKeyboardButton("Edit", callback_data="edit")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Ask for confirmation with "Continue" inline button
@@ -43,7 +43,7 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=
         "Your Question: " + user_questions[chat_id]['question'] + "\n"
         "\n"
-        "Mistyped your question? Just send it again below \n",
+        "Confirm? \n",
         reply_markup=reply_markup
     )
 
@@ -56,6 +56,9 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "continue":
         # User has clicked "Continue", proceed to handle options (either through buttons too or user input)
         await handle_options(update, context)
+    
+    elif query.data == "edit":
+        await poll(update, context)
 
 # Function to handle options, can only be called through button_callback and "continue" callback_data
 async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
