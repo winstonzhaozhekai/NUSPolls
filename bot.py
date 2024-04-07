@@ -21,11 +21,12 @@ async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
         , parse_mode = ParseMode.MARKDOWN
     )
     user_id = update.effective_user.id  # Retrieve user ID 
-    user_questions[user_id] = {'question': False,
-                               'options': False, 
-                               'num_options': False,
-                               'poll_confirmed': False,
-                               'poll_posted': False}  # Initialize a dictionary for user's question
+    user_questions[user_id] = {'question': None,
+                               'question_confirmed': False,
+                               'options': None, 
+                               'num_options': None,
+                               'options_confirmed': False,
+                               }  # Initialize a dictionary for user's question
     print("user_questions:", user_questions) # Just to view the updating of dictionary in your terminal when program is running
 
 async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -36,21 +37,46 @@ async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Please start by using /poll first before sending your question.")
         return
     
-    user_questions[user_id]['question'] = update.message.text # Retrive text sent by user after initialising /poll and store in dictionary
+    # If user has not confirmed question
+    if not user_questions[user_id]['question_confirmed']:
+        user_questions[user_id]['question'] = update.message.text # Retrive text sent by user after initialising /poll and store in dictionary
 
-    # Construct inline keyboard with a "Continue" button
-    keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+        # Construct inline keyboard with a "Continue" button
+        keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Ask for confirmation with "Continue" inline button
-    await update.message.reply_text(
-        text=
-        "Your Question: " + user_questions[user_id]['question'] + "\n"
-        "\n"
-        "Mistyped your question? Just send it again below \n",
-        reply_markup=reply_markup
-    )
+        # Ask for confirmation with "Continue" inline button
+        await update.message.reply_text(
+            text=
+            "Your Question: " + user_questions[user_id]['question'] + "\n"
+            "\n"
+            "Mistyped your question? Just send it again below \n",
+            reply_markup=reply_markup
+        )
+    # If user has not confirmed options
+    elif not user_questions[user_id]['options_confirmed']:
+        user_input = update.message.text
+        responses = user_input.strip().splitlines()
 
+        user_questions[user_id]['options'] = responses
+        user_questions[user_id]['num_options'] = len(responses)
+
+        message = "Your options are: \n"
+
+        for response in responses:
+            message += response + "\n"
+        
+        message += "Mistyped your options? Just send it again below \n"
+
+        keyboard = [[InlineKeyboardButton("Post", callback_data="post")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            text=message,
+            reply_markup=reply_markup
+        )
+
+    
     print("user_questions:", user_questions) # Just to view the updating of dictionary in your terminal when program is running
 
 # Function to handle options, can only be called through button_callback and "continue" callback_data
@@ -58,23 +84,39 @@ async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = update.effective_user.id # Retrieve user ID
 
-    # Construct inline keyboard with 9 buttons in rows of 3
-    keyboard = []
-    row = [] # Temporary list to hold buttons for each row
-    for i in range(1, 10):
-        row.append(InlineKeyboardButton(str(i), callback_data=f"option_{i}"))
-        if len(row) == 3:  # Row has 3 buttons
-            keyboard.append(row)
-            row = []  # Reset the row
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    user_questions[user_id]['question_confirmed'] = True # Update dictionary
 
     await bot.send_message(
         chat_id=user_id,
-        text="*How many options?:*",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=reply_markup
+        text=
+        "*Type out your options below*\n"
+        "Template: \n"
+        "\n"
+        "Yes\n"
+        "\n"
+        "No\n"
+        "\n"
+        "Neutral\n"
+        "\n"
+        "*Minimum 2 options, Maximum 10 options*\n"
+        ,
+        parse_mode=ParseMode.MARKDOWN
     )
+
+# Post Poll on Channel
+async def post_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id # Retrieve user ID
+    user_questions[user_id]['options_confirmed'] = True # Update dictionary (A little redundant not gonna lie)
+
+    # Sends poll to channel
+    await bot.send_poll(
+        chat_id=CHANNEL_ID,
+        question=user_questions[user_id]['question'],
+        options=user_questions[user_id]['options'],
+        type="regular"
+    )
+
+    del user_questions[user_id] # Deletes user dictionary once poll is sent to channel
 
 # Function to handle all buttons 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -83,9 +125,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "continue":
         # User has clicked "Continue", proceed to handle options (either through buttons too or user input)
         await handle_options(update, context)
-
-async def canitalk(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await bot.send_message(chat_id=CHANNEL_ID, text="IM TALKING")
+    elif query.data == "post":
+        await post_poll(update, context)
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
@@ -93,7 +134,6 @@ def main():
     app.add_handler(CommandHandler('info', info)) # Tags info to /info
     app.add_handler(CommandHandler('poll', poll)) # Tags poll to /poll
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_inputs))  # Handles the user's inputs
-    app.add_handler(CommandHandler('canitalk', canitalk)) 
     app.add_handler(CallbackQueryHandler(button_callback)) # Handles all buttons' callback_data
     app.run_polling()
 
