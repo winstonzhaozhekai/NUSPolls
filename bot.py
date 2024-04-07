@@ -21,11 +21,11 @@ async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
         , parse_mode = ParseMode.MARKDOWN
     )
     user_id = update.effective_user.id  # Retrieve user ID 
-    user_questions[user_id] = {'question_stated': False,
-                               'options_num_stated': False, 
-                               'options_stated': False,
+    user_questions[user_id] = {'question': False,
+                               'options': False, 
+                               'num_options': False,
                                'poll_confirmed': False,
-                               'poll_posted': False}  # Initialize an empty dictionary for user's question
+                               'poll_posted': False}  # Initialize a dictionary for user's question
     print("user_questions:", user_questions) # Just to view the updating of dictionary in your terminal when program is running
 
 async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -33,13 +33,13 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # If user typed something before initialising /poll 
     if user_id not in user_questions:
-        await update.message.reply_text("Access the bot's menu by typing /start.")
+        await update.message.reply_text("Please start by using /poll first before sending your question.")
         return
     
     user_questions[user_id]['question'] = update.message.text # Retrive text sent by user after initialising /poll and store in dictionary
 
     # Construct inline keyboard with a "Continue" button
-    keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")], [InlineKeyboardButton("Edit", callback_data="edit")]]
+    keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Ask for confirmation with "Continue" inline button
@@ -47,22 +47,11 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=
         "Your Question: " + user_questions[user_id]['question'] + "\n"
         "\n"
-        "Confirm? \n",
+        "Mistyped your question? Just send it again below \n",
         reply_markup=reply_markup
     )
 
     print("user_questions:", user_questions) # Just to view the updating of dictionary in your terminal when program is running
-
-# Function to handle all buttons 
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query # Retrive the callback_data from buttons (etc "continue" callback_data from "Continue" button)
-
-    if query.data == "continue":
-        # User has clicked "Continue", proceed to handle options (either through buttons too or user input)
-        await handle_options(update, context)
-    
-    elif query.data == "edit":
-        await poll(update, context)
 
 # Function to handle options, can only be called through button_callback and "continue" callback_data
 async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -86,6 +75,14 @@ async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=reply_markup
     )
+
+# Function to handle all buttons 
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query # Retrive the callback_data from buttons (etc "continue" callback_data from "Continue" button)
+
+    if query.data == "continue":
+        # User has clicked "Continue", proceed to handle options (either through buttons too or user input)
+        await handle_options(update, context)
 
 async def canitalk(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await bot.send_message(chat_id=CHANNEL_ID, text="IM TALKING")
