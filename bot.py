@@ -62,10 +62,22 @@ async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = update.effective_user.id # Retrieve user ID
 
+    # Construct inline keyboard with 9 buttons in rows of 3
+    keyboard = []
+    row = [] # Temporary list to hold buttons for each row
+    for i in range(1, 10):
+        row.append(InlineKeyboardButton(str(i), callback_data=f"option_{i}"))
+        if len(row) == 3:  # Row has 3 buttons
+            keyboard.append(row)
+            row = []  # Reset the row
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await bot.send_message(
         chat_id=user_id,
         text="*How many options?:*",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=reply_markup
     )
 
 async def canitalk(update: Update, context: ContextTypes.DEFAULT_TYPE):
