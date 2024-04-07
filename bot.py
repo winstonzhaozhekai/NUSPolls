@@ -11,7 +11,7 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 CHANNEL_ID = os.getenv('CHANNEL_ID')
 bot = Bot(token=BOT_TOKEN)
 
-# Dictionary to store users' questions tagged to chat ID (might need to hash since might be traceable)
+# Dictionary to store users' questions tagged to user ID
 user_questions = {}
 
 async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -20,19 +20,23 @@ async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "*Enter your question:* \n"
         , parse_mode = ParseMode.MARKDOWN
     )
-    chat_id = update.effective_chat.id # Retrieve chat ID (maybe user ID can work too?)
-    user_questions[chat_id] = {}  # Initialize an empty dictionary for user's question
+    user_id = update.effective_user.id  # Retrieve user ID 
+    user_questions[user_id] = {'question_stated': False,
+                               'options_num_stated': False, 
+                               'options_stated': False,
+                               'poll_confirmed': False,
+                               'poll_posted': False}  # Initialize an empty dictionary for user's question
     print("user_questions:", user_questions) # Just to view the updating of dictionary in your terminal when program is running
 
 async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id # Retrieve chat ID (maybe user ID can work too?)
+    user_id = update.effective_user.id  # Retrieve user ID
 
     # If user typed something before initialising /poll 
-    if chat_id not in user_questions:
+    if user_id not in user_questions:
         await update.message.reply_text("Access the bot's menu by typing /start.")
         return
     
-    user_questions[chat_id]['question'] = update.message.text # Retrive text sent by user after initialising /poll and store in dictionary
+    user_questions[user_id]['question'] = update.message.text # Retrive text sent by user after initialising /poll and store in dictionary
 
     # Construct inline keyboard with a "Continue" button
     keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")], [InlineKeyboardButton("Edit", callback_data="edit")]]
@@ -41,7 +45,7 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Ask for confirmation with "Continue" inline button
     await update.message.reply_text(
         text=
-        "Your Question: " + user_questions[chat_id]['question'] + "\n"
+        "Your Question: " + user_questions[user_id]['question'] + "\n"
         "\n"
         "Confirm? \n",
         reply_markup=reply_markup
@@ -63,12 +67,24 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Function to handle options, can only be called through button_callback and "continue" callback_data
 async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    chat_id = query.message.chat_id
+    user_id = update.effective_user.id # Retrieve user ID
+
+    # Construct inline keyboard with 9 buttons in rows of 3
+    keyboard = []
+    row = [] # Temporary list to hold buttons for each row
+    for i in range(1, 10):
+        row.append(InlineKeyboardButton(str(i), callback_data=f"option_{i}"))
+        if len(row) == 3:  # Row has 3 buttons
+            keyboard.append(row)
+            row = []  # Reset the row
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
     await bot.send_message(
-        chat_id=chat_id,
+        chat_id=user_id,
         text="*How many options?:*",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=reply_markup
     )
 
 async def canitalk(update: Update, context: ContextTypes.DEFAULT_TYPE):
