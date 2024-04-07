@@ -28,7 +28,7 @@ async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                'poll_posted': False}  # Initialize a dictionary for user's question
     print("user_questions:", user_questions) # Just to view the updating of dictionary in your terminal when program is running
 
-async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id  # Retrieve user ID
 
     # If user typed something before initialising /poll 
@@ -92,7 +92,7 @@ def main():
     app.add_handler(CommandHandler('start', start)) # Tags start to /start
     app.add_handler(CommandHandler('info', info)) # Tags info to /info
     app.add_handler(CommandHandler('poll', poll)) # Tags poll to /poll
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_question))  # Handles the user's input 
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_inputs))  # Handles the user's inputs
     app.add_handler(CommandHandler('canitalk', canitalk)) 
     app.add_handler(CallbackQueryHandler(button_callback)) # Handles all buttons' callback_data
     app.run_polling()
