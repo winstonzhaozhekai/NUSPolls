@@ -4,6 +4,7 @@ from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 from functions import *
+import re
 
 load_dotenv()
 
@@ -56,23 +57,37 @@ async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # If user has not confirmed options
     elif not user_questions[user_id]['options_confirmed']:
         user_input = update.message.text
-        responses = user_input.strip().splitlines()
+        output_string = re.sub(r'\n+', '\n', user_input)
+        responses = output_string.strip().splitlines()
 
         user_questions[user_id]['options'] = responses
         user_questions[user_id]['num_options'] = len(responses)
-
-        message = "Your options are: \n"
-
+        if user_questions[user_id]['num_options'] > 10 or user_questions[user_id]['num_options'] < 2:
+            many_or_little = lambda x: 'many' if x > 10 else 'little'
+            message = f"You have indicated too {many_or_little(user_questions[user_id]['num_options'])} options!"
+            await update.message.reply_text(
+                text=message,
+            )
+            user_questions[user_id]['options'] = None
+            user_questions[user_id]['num_options'] = None
+            await handle_options(update, context)
+            return
+        message = "This is your poll: \n\n"
+        message += "*" + user_questions[user_id]['question'] + "*\n\n"
         for response in responses:
             message += response + "\n"
         
-        message += "Mistyped your options? Just send it again below \n"
+        message += "\nMistyped your options? Just send it again below \n"
 
         keyboard = [[InlineKeyboardButton("Post", callback_data="post")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text(
+        await bot.send_message(
+            chat_id=user_id,
             text=message,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        await update.message.reply_text(
+            text = 'Tap the button below to post your poll',
             reply_markup=reply_markup
         )
 
@@ -89,16 +104,14 @@ async def handle_options(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await bot.send_message(
         chat_id=user_id,
         text=
-        "*Type out your options below*\n"
-        "Template: \n"
-        "\n"
-        "Yes\n"
-        "\n"
-        "No\n"
-        "\n"
-        "Neutral\n"
-        "\n"
-        "*Minimum 2 options, Maximum 10 options*\n"
+        "*2-10 options allowed*\n\n"
+        "*Type options below, leave a line for a new option*\n\n"
+        "_Template:_ \n"
+        "M - Yes\n"
+        "M - No\n"
+        "F - Yes\n"
+        "F - No\n"
+        "Check Answers\n"
         ,
         parse_mode=ParseMode.MARKDOWN
     )
