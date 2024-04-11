@@ -12,7 +12,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = 
         "*Welcome to NUSPolls* 📊\n" 
         "\n"
-        "Do you have a heartburning question you wish to ask? \n"
+        "Do you have a heartburning question you wish to ask? Do you find it hard to relate to PaisehQs?\n"
         "\n"
         "Click /poll to start a poll on our channel now: <insert link> \n"
         "\n"

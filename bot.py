@@ -22,6 +22,7 @@ async def poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
         , parse_mode = ParseMode.MARKDOWN
     )
     user_id = update.effective_user.id  # Retrieve user ID 
+
     user_questions[user_id] = {'question': None,
                                'question_confirmed': False,
                                'options': None, 
@@ -57,12 +58,13 @@ async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # If user has not confirmed options
     elif not user_questions[user_id]['options_confirmed']:
         user_input = update.message.text
-        output_string = re.sub(r'\n+', '\n', user_input)
+        output_string = re.sub(r'\n+', '\n', user_input) #trims all extra \n s
         responses = output_string.strip().splitlines()
 
         user_questions[user_id]['options'] = responses
         user_questions[user_id]['num_options'] = len(responses)
-        if user_questions[user_id]['num_options'] > 10 or user_questions[user_id]['num_options'] < 2:
+        #calls back the prev function if too long or too short
+        if user_questions[user_id]['num_options'] > 10 or user_questions[user_id]['num_options'] < 2: 
             many_or_little = lambda x: 'many' if x > 10 else 'little'
             message = f"You have indicated too {many_or_little(user_questions[user_id]['num_options'])} options!"
             await update.message.reply_text(
