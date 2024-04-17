@@ -65,7 +65,7 @@ async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_questions[user_id]['num_options'] = len(responses)
         #calls back the prev function if too long or too short
         if user_questions[user_id]['num_options'] > 10 or user_questions[user_id]['num_options'] < 2: 
-            many_or_little = lambda x: 'many' if x > 10 else 'little'
+            many_or_little = lambda x: 'many' if x > 10 else 'few'
             message = f"You have indicated too {many_or_little(user_questions[user_id]['num_options'])} options!"
             await update.message.reply_text(
                 text=message,
@@ -75,7 +75,7 @@ async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await handle_options(update, context)
             return
         message = "This is your poll: \n\n"
-        message += "*" + user_questions[user_id]['question'] + "*\n\n"
+        message += "*" + "Question: " + user_questions[user_id]['question'] + "*\n\n"
         for response in responses:
             message += response + "\n"
         
@@ -86,13 +86,9 @@ async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await bot.send_message(
             chat_id=user_id,
             text=message,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        await update.message.reply_text(
-            text = 'Tap the button below to post your poll',
+            parse_mode=ParseMode.MARKDOWN,
             reply_markup=reply_markup
         )
-
     
     print("user_questions:", user_questions) # Just to view the updating of dictionary in your terminal when program is running
 
@@ -126,12 +122,14 @@ async def post_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Sends poll to channel
     await bot.send_poll(
         chat_id=CHANNEL_ID,
-        question=user_questions[user_id]['question'],
+        question="Question: " + user_questions[user_id]['question'],
         options=user_questions[user_id]['options'],
         type="regular"
     )
 
     del user_questions[user_id] # Deletes user dictionary once poll is sent to channel
+
+    print("user_questions:", user_questions)
 
 # Function to handle all buttons 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
