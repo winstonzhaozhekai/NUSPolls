@@ -140,7 +140,10 @@ async def post_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=CHANNEL_ID,
         question="TAG: " + poll_tag + "\n" + "Question: " + user_questions[user_id]['question'],
         options=user_questions[user_id]['options'],
-        type="regular"
+        type="regular",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Comment Here", callback_data=f"comment_{poll_tag}")]
+        ])
     )
 
     del user_questions[user_id] # Deletes user dictionary once poll is sent to channel
