@@ -3,8 +3,9 @@ import os
 from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-from functions import *
+from functions import start, info
 import re
+from nlp_functions import check_language
 
 load_dotenv()
 
@@ -47,14 +48,27 @@ async def handle_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[InlineKeyboardButton("Continue", callback_data="continue")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Ask for confirmation with "Continue" inline button
-        await update.message.reply_text(
-            text=
-            "Your Question: " + user_questions[user_id]['question'] + "\n"
-            "\n"
-            "Mistyped your question? Just send it again below \n",
-            reply_markup=reply_markup
-        )
+        text = user_questions[user_id]['question']
+
+        confidence_score = check_language(text)
+
+        print("Confidence Score:", confidence_score)
+
+        if confidence_score > 0.2: # Threshold for us to set
+            # Ask for confirmation with "Continue" inline button
+            await update.message.reply_text(
+                text=
+                "Your Question: " + user_questions[user_id]['question'] + "\n"
+                "\n"
+                "Mistyped your question? Just send it again below \n",
+                reply_markup=reply_markup
+            )
+        else:
+            await update.message.reply_text(
+                text=
+                "Your poll does not seem to be in English, please retry\n"
+            )
+
     # If user has not confirmed options
     elif not user_questions[user_id]['options_confirmed']:
         user_input = update.message.text
