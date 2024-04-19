@@ -3,7 +3,7 @@ import os
 from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-from functions import start, info
+from functions import start, info, generate_hashtag
 import re
 from nlp_functions import check_language
 
@@ -133,10 +133,12 @@ async def post_poll(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id # Retrieve user ID
     user_questions[user_id]['options_confirmed'] = True # Update dictionary (A little redundant not gonna lie)
 
+    poll_tag = generate_hashtag()
+
     # Sends poll to channel
     await bot.send_poll(
         chat_id=CHANNEL_ID,
-        question="Question: " + user_questions[user_id]['question'],
+        question="TAG: " + poll_tag + "\n" + "Question: " + user_questions[user_id]['question'],
         options=user_questions[user_id]['options'],
         type="regular"
     )
